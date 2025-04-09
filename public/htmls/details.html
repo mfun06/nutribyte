@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Food Details - NutriByte</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../header.js" defer></script>
+</head>
+<body>
+  <header-component></header-component>
+
+  <div class="details-container">
+    <h2>Food Details</h2>
+    <div id="details">Loading...</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    async function fetchFoodDetails() {
+      try {
+        const response = await fetch(`/api/food/${id}`);
+        if (!response.ok) throw new Error("Item not found");
+
+        const data = await response.json();
+        const container = document.getElementById("details");
+
+        container.innerHTML = `
+          <div class="detail-item"><strong>FDC ID:</strong> ${data.fdcId}</div>
+          <div class="detail-item"><strong>Description:</strong> ${data.description}</div>
+          <div class="detail-item"><strong>Brand:</strong> ${data.brandOwner}</div>
+          <div class="detail-item"><strong>Country:</strong> ${data.marketCountry}</div>
+          <div class="detail-item"><strong>GTIN/UPC:</strong> ${data.gtinUpc}</div>
+          <div class="detail-item"><strong>Serving Size:</strong> ${data.servingSize} ${data.servingSizeUnit}</div>
+          <div class="detail-item"><strong>Household Serving:</strong> ${data.householdServingFullText}</div>
+          <div class="detail-item"><strong>Category:</strong> ${data.brandedFoodCategory}</div>
+          <div class="detail-item"><strong>Ingredients:</strong> ${data.ingredients}</div>
+          <div class="detail-item"><strong>Published:</strong> ${data.publicationDate}</div>
+        `;
+      } catch (err) {
+        document.getElementById("details").innerHTML = `<p style="color:red;">Error loading food details.</p>`;
+      }
+    }
+
+    fetchFoodDetails();
+  </script>
+</body>
+</html>

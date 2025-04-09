@@ -1,25 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="ISO-8859-1">
-<title>NutriByte</title>
-<link rel="stylesheet" href="css/style.css">
-<script src="header.js"></script>
+  <meta charset="ISO-8859-1">
+  <title>NutriByte</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="header.js" defer></script>
 </head>
 
 <body>
-	<header-component></header-component>
+  <header-component></header-component>
 
-	<div class="container">
-		<div class="text-content">
-		<h3 align="left">Welcome to NutriByte from <a href="https://foodsrus.com/">FoodsRUs</a></h3>
-			<p align=left>
-				<strong>NutriByte</strong> is powered by data from USDA's <a
-					href="https://fdc.nal.usda.gov/about-us.html">FoodData Central</a>.
-				<p>Look up your favorite food products and know their nutritional value.<br>Compare your favorite foods to plan your diet.</p>
-			</p>
-			
-		</div>
-	</div>
+  <div class="container">
+    <div class="text-content">
+      <h3 align="left">
+        Welcome to NutriByte from
+        <a href="https://foodsrus.com/">FoodsRUs</a>
+      </h3>
+      <p align="left">
+        <strong>NutriByte</strong> is powered by data from USDA's
+        <a href="https://fdc.nal.usda.gov/about-us.html">FoodData Central</a>.
+      </p>
+      <p>
+        Look up your favorite food products and know their nutritional value.<br>
+        Compare your favorite foods to plan your diet.
+      </p>
+    </div>
+
+    <div class="search-section" style="margin-top: 2rem;">
+      <h4>Search Foods</h4>
+      <input type="text" id="search" placeholder="Enter food name..." size="50" />
+      <button onclick="searchFood()">Search</button>
+
+      <div id="results" class="results" style="margin-top: 1rem;"></div>
+    </div>
+  </div>
+
+  <script>
+    async function searchFood() {
+      const query = document.getElementById("search").value.trim();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<p>Searching...</p>";
+
+      try {
+        const res = await fetch(`/api/food?searchString=${encodeURIComponent(query)}`);
+        const text = await res.text(); // because /api/food returns HTML
+        resultsDiv.innerHTML = text;
+      } catch (err) {
+        resultsDiv.innerHTML = "<p>Error fetching search results.</p>";
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>

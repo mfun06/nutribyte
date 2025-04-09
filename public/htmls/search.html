@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="ISO-8859-1">
+  <title>NutriByte</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../header.js" defer></script>
+</head>
+
+<body>
+  <header-component></header-component>
+
+  <div style="text-align: center; vertical-align: middle;">
+    <form name="search" action="/api/food" method="get">
+      <input type="search" name="searchString"
+        placeholder="Enter keywords to search food product" size="100" /><br />
+    </form>
+  </div>
+
+  <div class="container">
+    <h2 style="text-align: center;">Food Details</h2>
+    <div id="food-details" style="text-align: center;">
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <script>
+    function getFoodId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    async function loadFoodDetails() {
+      const id = getFoodId();
+      if (!id) {
+        document.getElementById("food-details").innerHTML = "<p>No food ID provided.</p>";
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/foods/${id}`);
+        const food = await res.json();
+
+        let html = `<h3>${food.description}</h3>`;
+        html += `<p><strong>Food Group:</strong> ${food.food_group || 'N/A'}</p>`;
+        html += `<h4>Nutrient Information</h4><ul style="list-style-type: none;">`;
+
+        food.nutrients.forEach(n => {
+          html += `<li>${n.nutrient_name}: ${n.value} ${n.unit}</li>`;
+        });
+
+        html += `</ul>`;
+        document.getElementById("food-details").innerHTML = html;
+
+      } catch (err) {
+        document.getElementById("food-details").innerHTML = "<p>Error loading food details.</p>";
+        console.error(err);
+      }
+    }
+
+    loadFoodDetails();
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ headerTemplate.innerHTML = `
 				<tr>
 					<td>
 						<div>
-							<a><img src="/images/logo.svg"
+							<a><img src="/htmls/images/logo.svg"
 								alt="Logo - NutriByte" width="100" /></a>
 						</div>
 					</td>
