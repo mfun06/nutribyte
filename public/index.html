@@ -26,30 +26,225 @@
       </p>
     </div>
 
-    <div class="search-section" style="margin-top: 2rem;">
-      <h4>Search Foods</h4>
-      <input type="text" id="search" placeholder="Enter food name..." size="50" />
-      <button onclick="searchFood()">Search</button>
-
-      <div id="results" class="results" style="margin-top: 1rem;"></div>
+    <div class="search-section">
+      <div id="search-panel" class="search-panel">
+        <h4>Search Foods</h4>
+        <input type="text" id="search" placeholder="Enter food name..." size="50" oninput="debounceSearch()" />
+        <button onclick="searchFood()">Search</button>
+        <div id="results" class="results" style="margin-top: 1rem;"></div>
+      </div>
+    
+      <div id="details" class="food-details"></div>
     </div>
-  </div>
+    
 
   <script>
-    async function searchFood() {
+    let currentPage = 1;
+    let currentLimit = 20;
+    let currentSearch = "";
+    let debounceTimer;
+
+    function debounceSearch() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => searchFood(1), 300);
+    }
+
+    function addToCompare(id) {
+      let list = JSON.parse(localStorage.getItem('compareList')) || [];
+      if (!list.includes(id)) {
+        list.push(id);
+        localStorage.setItem('compareList', JSON.stringify(list));
+        alert("Added to compare.");
+      } else {
+        alert("Already added.");
+      }
+    }
+
+      async function loadFoodDetails(id) {
+        const detailsDiv = document.getElementById("details");
+        const searchPanel = document.getElementById("search-panel");
+
+        detailsDiv.classList.remove("show");
+        detailsDiv.innerHTML = "<p>Loading food details...</p>";
+
+        try {
+          const res = await fetch(`/api/food/${id}`);
+          if (!res.ok) throw new Error("Food not found");
+
+          const data = await res.json();
+
+          detailsDiv.innerHTML = `
+            <div class="detail-card">
+              <div style="text-align: right;">
+                <button onclick="closeDetails()" style="background-color: #ccc; border: none; padding: 4px 8px; border-radius: 4px;">✖</button>
+              </div>
+              <h3>Food Details</h3>
+              <p><strong>Description:</strong> ${data.description}</p>
+              <p><strong>Brand:</strong> ${data.brandOwner}</p>
+              <p><strong>Country:</strong> ${data.marketCountry}</p>
+              <p><strong>UPC:</strong> ${data.gtinUpc}</p>
+              <p><strong>Serving:</strong> ${data.servingSize} ${data.servingSizeUnit}</p>
+              <p><strong>Household:</strong> ${data.householdServingFullText}</p>
+              <p><strong>Category:</strong> ${data.brandedFoodCategory}</p>
+              <p><strong>Ingredients:</strong> ${data.ingredients}</p>
+              <p><strong>Published:</strong> ${data.publicationDate}</p>
+
+              <div style="margin-top: 1em;">
+                <label for="serving-input">Servings:</label>
+                <input type="number" id="serving-input" value="1" min="0.1" step="0.1" style="width: 60px;" />
+                <button onclick="logToDiet(${data.fdcId}, '${data.description.replace(/'/g, "\\'")}')">Log to Diet</button>
+              </div>
+
+              <div style="margin-top: 1em;">
+                <button onclick="addToCompare('${data.fdcId}')">Add to Compare</button>
+              </div>
+              <div style="margin-top: 0.5em;">
+                <button onclick="window.location.href='/htmls/compare.html'">Compare Now</button>
+              </div>
+            </div>
+          `;
+
+
+          searchPanel.classList.add("shrinked");
+          setTimeout(() => {
+            detailsDiv.classList.add("show");
+          }, 50);
+
+        } catch (err) {
+          detailsDiv.innerHTML = `<p style="color:red;">Error loading food details.</p>`;
+          console.error(err);
+        }
+  }
+
+    function closeDetails() {
+    const detailsDiv = document.getElementById("details");
+    const searchPanel = document.getElementById("search-panel");
+
+    detailsDiv.classList.remove("show");
+    detailsDiv.innerHTML = "";
+    searchPanel.classList.remove("shrinked");
+  }
+
+    async function logToDiet(fdcId, description) {
+      const amount = parseFloat(document.getElementById("serving-input").value);
+      if (!amount || amount <= 0) {
+        alert("Please enter a valid number of servings.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/food-nutrients/${fdcId}`);
+        const nutrientsRaw = await res.json();
+        console.log("Nutrient data loaded:", nutrientsRaw); // ✅
+
+        const nutrients = nutrientsRaw.map(n => ({
+          name: n.nutrientName,
+          value: Math.round((n.amount * amount + Number.EPSILON) * 100) / 100,
+          unit: n.nutrientUnit
+        }));
+
+        const kcalEntry = nutrients.find(n =>
+          n.name.toLowerCase().includes("calories") ||
+          n.name.toLowerCase().includes("energy")
+        );
+        const totalCalories = kcalEntry ? kcalEntry.value : 0;
+        const today = new Date().toISOString().split("T")[0];
+
+        const logs = JSON.parse(localStorage.getItem("dietLog") || "[]");
+
+        logs.push({
+          id: crypto.randomUUID(),
+          fdcId,
+          description,
+          amount,
+          date: today,
+          nutrients,
+          totalCalories
+        });
+
+        localStorage.setItem("dietLog", JSON.stringify(logs));
+        alert(`Logged ${amount} serving(s) of ${description} to your diet.`);
+      } catch (err) {
+        console.error("Logging error:", err);
+        alert("Failed to log food with nutrients.");
+      }
+  }
+
+
+
+    async function searchFood(page = 1) {
       const query = document.getElementById("search").value.trim();
       const resultsDiv = document.getElementById("results");
+      const detailsDiv = document.getElementById("details");
+      resultsDiv.innerHTML = "";
+      detailsDiv.innerHTML = "";
+
+      if (!query || /[^a-zA-Z0-9\s]/.test(query)) {
+        resultsDiv.innerHTML = "<p>Please enter a valid food name (letters and numbers only).</p>";
+        return;
+      }
+
+      currentSearch = query;
+      currentPage = page;
+      localStorage.setItem("lastSearch", query);
+
       resultsDiv.innerHTML = "<p>Searching...</p>";
 
       try {
-        const res = await fetch(`/api/food?searchString=${encodeURIComponent(query)}`);
-        const text = await res.text(); // because /api/food returns HTML
-        resultsDiv.innerHTML = text;
+        const res = await fetch(`/api/food/search-data?searchString=${encodeURIComponent(query)}&page=${page}&limit=${currentLimit}`);
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          resultsDiv.innerHTML = "<p>No results found.</p>";
+          return;
+        }
+
+        let html = `<ul>`;
+        data.results.forEach(item => {
+          html += `
+            <li>
+              <a href="#" onclick="loadFoodDetails('${item.fdcId}'); return false;">
+                <strong>${item.fdcId}</strong>: ${item.description}
+              </a>
+              <button onclick="addToCompare('${item.fdcId}')">Add to Compare</button>
+            </li>
+          `;
+        });
+        html += `</ul>`;
+
+        const totalPages = Math.ceil(data.totalCount / data.limit);
+        html += `<div style="margin-top:10px;">`;
+
+        if (currentPage > 1) {
+          html += `<button onclick="searchFood(${currentPage - 1})">&laquo; Prev</button> `;
+        }
+
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, startPage + 4);
+        for (let i = startPage; i <= endPage; i++) {
+          html += `<button onclick="searchFood(${i})" style="${i === currentPage ? 'font-weight:bold;' : ''}">${i}</button> `;
+        }
+
+        if (currentPage < totalPages) {
+          html += `<button onclick="searchFood(${currentPage + 1})">Next &raquo;</button>`;
+        }
+
+        html += `</div>`;
+        resultsDiv.innerHTML = html;
+
       } catch (err) {
-        resultsDiv.innerHTML = "<p>Error fetching search results.</p>";
+        resultsDiv.innerHTML = "<p>Error loading search results.</p>";
         console.error(err);
       }
     }
+
+    window.onload = () => {
+      const savedQuery = localStorage.getItem("lastSearch");
+      if (savedQuery) {
+        document.getElementById("search").value = savedQuery;
+        searchFood();
+      }
+    };
   </script>
 </body>
 </html>

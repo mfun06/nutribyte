@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Compare Foods - NutriByte</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="header.js" defer></script>
+</head>
+<body>
+  <header-component></header-component>
+
+  <div class="compare-container">
+    <h2>Food Comparison</h2>
+    <div id="comparison-results">Loading...</div>
+  </div>
+
+  <script>
+    async function loadComparison() {
+      const compareList = JSON.parse(localStorage.getItem("compareList")) || [];
+
+      if (compareList.length === 0) {
+        document.getElementById("comparison-results").innerHTML = "<p>No items selected for comparison.</p>";
+        return;
+      }
+
+      try {
+        const idsQuery = compareList.join(",");
+        const response = await fetch(`/api/food/compare?ids=${idsQuery}`);
+        const foods = await response.json();
+
+        if (!foods || foods.length === 0) {
+          document.getElementById("comparison-results").innerHTML = "<p>No data found.</p>";
+          return;
+        }
+
+        let table = `
+          <table border="1">
+            <tr>
+              <th>Field</th>
+              ${foods.map(f => `<th>${f.description}</th>`).join('')}
+            </tr>
+            <tr><td>Brand</td>${foods.map(f => `<td>${f.brandOwner || ''}</td>`).join('')}</tr>
+            <tr><td>Country</td>${foods.map(f => `<td>${f.marketCountry || ''}</td>`).join('')}</tr>
+            <tr><td>Serving Size</td>${foods.map(f => `<td>${f.servingSize || ''} ${f.servingSizeUnit || ''}</td>`).join('')}</tr>
+            <tr><td>Ingredients</td>${foods.map(f => `<td>${f.ingredients || ''}</td>`).join('')}</tr>
+            <tr><td>Category</td>${foods.map(f => `<td>${f.brandedFoodCategory || ''}</td>`).join('')}</tr>
+            <tr><td>Published</td>${foods.map(f => `<td>${f.publicationDate || ''}</td>`).join('')}</tr>
+          </table>
+          <br>
+          <button onclick="clearCompare()">Clear Compare List</button>
+        `;
+
+        document.getElementById("comparison-results").innerHTML = table;
+      } catch (err) {
+        document.getElementById("comparison-results").innerHTML = "<p>Error loading comparison data.</p>";
+        console.error(err);
+      }
+    }
+
+    function clearCompare() {
+      localStorage.removeItem("compareList");
+      location.reload();
+    }
+
+    loadComparison();
+  </script>
+</body>
+</html>

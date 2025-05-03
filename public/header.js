@@ -7,14 +7,14 @@ headerTemplate.innerHTML = `
 				<tr>
 					<td>
 						<div>
-							<a><img src="/htmls/images/logo.svg"
+							<a><img src="/images/logo.svg"
 								alt="Logo - NutriByte" width="100" /></a>
 						</div>
 					</td>
-					<td align="left" valign="bottom"><a href="index.html">home</a></td>
-                    <td align="left" valign="bottom"><a href="/htmls/search.html">search</a></td>
-                    <td align="left" valign="bottom"><a href="index.html">compare</a></td>
-                    <td align="left" valign="bottom"><a href="index.html">login</a></td>
+					<td align="left" valign="bottom"><a href="index.html">Home</a></td>
+                    <td align="left" valign="bottom"><a href="search.html">Search</a></td>
+                    <td align="left" valign="bottom"><a href="compare.html">Compare</a></td>
+                    <td align="left" valign="bottom"><a href="diet.html">Diet Tracker</a></td>
 				</tr>
 			</tbody>
 		</table>

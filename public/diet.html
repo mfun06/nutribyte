@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Diet Log</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../header.js" defer></script>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #f1f1f1; }
+    .nutrients {
+      margin: 0.5rem 0 1rem 0;
+      padding: 0.5rem;
+      background: #f3f3f3;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header-component></header-component>
+
+  <div class="container">
+    <h2>Today's Diet Log</h2>
+    <div id="diet-container">Loading...</div>
+  </div>
+
+  <script>
+    function loadDietLog() {
+      const logs = JSON.parse(localStorage.getItem("dietLog") || "[]");
+      const today = new Date().toISOString().split("T")[0];
+      const todayLogs = logs.filter(entry => entry.date === today);
+
+      if (todayLogs.length === 0) {
+        document.getElementById("diet-container").innerHTML = "<p>No entries logged today.</p>";
+        return;
+      }
+
+      let totalCalories = 0;
+      let html = "<table><tr><th>Description</th><th>Servings</th><th>Calories</th><th>Nutrients</th><th>Action</th></tr>";
+
+      todayLogs.forEach((entry, i) => {
+        totalCalories += entry.totalCalories || 0;
+
+        let nutrientHTML = "";
+        if (entry.nutrients && entry.nutrients.length > 0) {
+          nutrientHTML = "<details><summary>Show</summary><div class='nutrients'><ul>";
+          entry.nutrients.forEach(n => {
+            nutrientHTML += `<li>${n.name}: ${n.value} ${n.unit}</li>`;
+          });
+          nutrientHTML += "</ul></div></details>";
+        } else {
+          nutrientHTML = "—";
+        }
+
+        html += `
+          <tr>
+            <td>${entry.description}</td>
+            <td>${entry.amount}</td>
+            <td>${entry.totalCalories ?? "—"}</td>
+            <td>${nutrientHTML}</td>
+            <td><button onclick="deleteLog(${i})">Remove</button></td>
+          </tr>
+        `;
+      });
+
+      html += `</table><p><strong>Total Calories:</strong> ${Math.round(totalCalories)}</p>`;
+      document.getElementById("diet-container").innerHTML = html;
+    }
+
+    function deleteLog(index) {
+      let logs = JSON.parse(localStorage.getItem("dietLog") || "[]");
+      const today = new Date().toISOString().split("T")[0];
+      const todayLogs = logs.filter(entry => entry.date === today);
+
+      const toDelete = todayLogs[index];
+      logs = logs.filter(entry =>
+        !(entry.date === toDelete.date &&
+          entry.fdcId === toDelete.fdcId &&
+          entry.amount === toDelete.amount)
+      );
+
+      localStorage.setItem("dietLog", JSON.stringify(logs));
+      loadDietLog();
+    }
+
+    window.onload = loadDietLog;
+  </script>
+</body>
+</html>

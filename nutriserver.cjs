@@ -5,6 +5,7 @@ const mongodbRoutes = require("./nutridb.cjs");
 
 // Serve static files from the public dir
 app.use(express.static("public"));
+app.use(express.json());
 app.use("/api", mongodbRoutes);
 
 // Start the web server
